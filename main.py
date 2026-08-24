@@ -11,7 +11,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestRegressor
 
 # Path to the saved model
-joblib_file = "obesity2.joblib"
+joblib_file = "https://drive.google.com/file/d/1oaHLCgr7ns8WFpowA7tuaetHhsEIcVAm/view?usp=sharing"
 
 # Load the trained pipeline
 @st.cache_resource
