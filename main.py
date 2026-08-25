@@ -2,64 +2,59 @@ import streamlit as st
 import pandas as pd
 import joblib
 import os
+import requests
 
 # Ensure all necessary scikit-learn classes are available when loading the pipeline
-# This is crucial because the pipeline contains these objects
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestRegressor
 
-# Path to the saved model
+# Path to the saved model on GitHub
 joblib_file = "https://github.com/Lolly-22/Obesity-in-children-and-adolescents/releases/download/latest/obesity2.joblib"
 
 # Load the trained pipeline
-@st.cache_resource
-def load_model(path):
-    if not os.path.exists(path):
-        st.error(f"Model file not found at: {path}")
-        return None
+@st.cache_resource(show_spinner=False)
+def load_model(url, local_path="obesity2.joblib"):
+    # 1. Download the file if we don't have it locally yet
+    if not os.path.exists(local_path):
+        try:
+            with st.spinner("Downloading model from GitHub... this may take a moment."):
+                response = requests.get(url, stream=True)
+                response.raise_for_status() # Check for HTTP errors (like 404 Not Found)
+                
+                with open(local_path, 'wb') as file:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        file.write(chunk)
+        except Exception as e:
+            st.error(f"Failed to download the model from GitHub: {e}")
+            return None
+
+    # 2. Load the downloaded local file
     try:
-        return joblib.load(path)
+        return joblib.load(local_path)
     except Exception as e:
         st.error(f"Error loading the model: {e}")
         return None
 
+# Initialize the pipeline
 pipeline = load_model(joblib_file)
 
 if pipeline is None:
     st.stop()
 
-# Extract unique values for dropdowns from the Data1 DataFrame (assuming Data1 is available in the environment)
-# In a real-world Streamlit app, you might load these from a file or hardcode them if they are static.
-# For this context, we will assume these values are known or can be manually copied.
-# Let's get these from the `Data1` variable which is in the kernel state.
-# For a standalone app, you would load your original dataset or store these values separately.
-
-# As a workaround for a standalone app, if Data1 is not directly accessible, 
-# one would usually save these unique values alongside the model or load the original data to get them.
-# For the purpose of generating code in Colab, we'll assume `Data1` is conceptually available for getting these lists.
-
-# Example values (replace with actual unique values from your Data1['COUNTRY'].unique(), etc. if running standalone)
-# If running directly after the notebook, Data1 is in memory, so we can access it.
-# If running as a standalone .py file, you'd need to load the original data or hardcode these lists.
-
-# Since `Data1` was used to train the model, we should have its values available.
-# Assuming `Data1` is a global variable from previous cells (for notebook context)
-# In a production app, these lists would be pre-saved or fetched from a database/file.
-
-# If Data1 is not available, these lists must be explicitly defined using the values observed during training.
-# For this demonstration within the notebook, we will use placeholder lists if Data1 is not directly callable in this isolated cell's execution context.
-
-countries = ['Gambia', 'Ghana', 'Zambia', 'Namibia', 'Niger', 'Nigeria', 'Benin', 'Cabo Verde',
-             'Sierra Leone', 'Somalia', 'South Africa', 'Zimbabwe', 'South Sudan', "Côte d'Ivoire",
-             'Angola', 'Guinea-Bissau', 'Djibouti', 'Gabon', 'Morocco', 'Mozambique', 'Congo',
-             'Democratic Republic of the Congo', 'Togo', 'Comoros', 'Lesotho', 'Botswana',
-             'Burundi', 'Cameroon', 'Senegal', 'Seychelles', 'Algeria', 'Eritrea',
-             'United Republic of Tanzania', 'Burkina Faso', 'Eswatini', 'Ethiopia', 'Egypt',
-             'Mauritania', 'Mauritius', 'Central African Republic', 'Chad', 'Sudan', 'Kenya',
-             'Rwanda', 'Madagascar', 'Malawi', 'Mali', 'Liberia', 'Libya', 'Uganda',
-             'Sao Tome and Principe', 'Equatorial Guinea']
+# Pre-defined unique values for the dropdowns
+countries = [
+    'Algeria', 'Angola', 'Benin', 'Botswana', 'Burkina Faso', 'Burundi', 'Cabo Verde',
+    'Cameroon', 'Central African Republic', 'Chad', 'Comoros', 'Congo', "Côte d'Ivoire",
+    'Democratic Republic of the Congo', 'Djibouti', 'Egypt', 'Equatorial Guinea',
+    'Eritrea', 'Eswatini', 'Ethiopia', 'Gabon', 'Gambia', 'Ghana', 'Guinea-Bissau',
+    'Kenya', 'Lesotho', 'Liberia', 'Libya', 'Madagascar', 'Malawi', 'Mali', 'Mauritania',
+    'Mauritius', 'Morocco', 'Mozambique', 'Namibia', 'Niger', 'Nigeria', 'Rwanda',
+    'Sao Tome and Principe', 'Senegal', 'Seychelles', 'Sierra Leone', 'Somalia',
+    'South Africa', 'South Sudan', 'Sudan', 'Togo', 'Uganda', 'United Republic of Tanzania',
+    'Zambia', 'Zimbabwe'
+]
 sex_options = ['FEMALE', 'MALE', 'TOTAL']
 age_groups = ['5-9 years', '10-19 years', '5-19 years']
 
